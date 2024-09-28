@@ -1,0 +1,16 @@
+Basically an on-going list of things I would like to do. Note
+that these are not listed in any particular order.
+
+In progress:
+* Basic texture'd triangle
+
+TODO:
+* Specify an MVP matrix in shader
+	* Implies depth testing
+* Textured cube
+* Load textures from file
+* Correct shader/application input data
+* Better synchronization mechanism
+* Do learning about the sampler type that is used
+* Replace upload heap used in vertex buffer creation
+* Understand texture row/pitch
