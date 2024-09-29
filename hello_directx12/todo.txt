@@ -3,6 +3,7 @@ that these are not listed in any particular order.
 
 * Specify an MVP matrix in shader
 	* Implies depth testing
+* Vertex Index Buffer
 * Textured cube
 * Load textures from file
 * Correct shader/application input data
