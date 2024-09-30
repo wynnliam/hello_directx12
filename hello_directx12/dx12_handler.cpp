@@ -569,6 +569,23 @@ void wait_for_previous_frame(dx12_handler* dx12) {
 	// There is a tutorial D3D12HelloFrameBuffering that shows the
 	// right way to do this. However, we are doing this for
 	// simplicity.
+	// 
+	// Why is this bad? Well basically this function unneccissarily stalls
+	// the CPU until the GPU is done. In reality, we could actually begin
+	// work on another frame with some careful setup. Both the GPU and CPU
+	// could be better saturated with parallel work. Obviously to make this
+	// happen we'd need smarter synchronization mechanisms than what's here.
+	// I will add that at some point. For now, I think the idea is that each
+	// frame buffer in the swap chain would have a fence value and so there's
+	// room to do parallel work on all of them as long as we can juggle our
+	// fence values.
+	// 
+	// Anyways, since we're stalling we're adding latency that doesn't need
+	// to be there is the gist.
+	// 
+	// There's other things we could do like have multiple command queues in
+	// action, and have fences on *specific* resources as opposed to entire
+	// frames.
 	//
 
 	UINT64 fence_val;
