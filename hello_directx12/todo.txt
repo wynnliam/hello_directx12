@@ -10,4 +10,3 @@ that these are not listed in any particular order.
 * Better synchronization mechanism
 * Do learning about the sampler type that is used
 * Replace upload heap used in vertex buffer creation
-* Understand texture row/pitch

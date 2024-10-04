@@ -466,6 +466,18 @@ void create_texture(application* app) {
 
 	//
 	// Upload the actual texture data using the upload heap.
+	// 
+	// One thing - what exactly are RowPitch and SlicePitch? They aren't
+	// just the width and height of the texture. But basically it goes like
+	// this: for a 2D texture, RowPitch is the size in bytes of a single row
+	// of pixels. So consider a texture where each pixel has an RGBA component,
+	// and each of these is a byte. Then a single pixel is 4 bytes in size.
+	// Now if the width of a texture is 64 pixels, then its 64 * 4 = 256
+	// bytes.
+	// 
+	// The slice is how many total bytes are needed for a single 2D texture.
+	// Thus if our texture is 64 x 64 pixels, then the SlicePitch is 
+	// 64 * 64 * 4 = 16384 bytes.
 	//
 
 	texture_subresource = {};
