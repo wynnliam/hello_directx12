@@ -150,7 +150,8 @@ ComPtr<ID3D12RootSignature> initialize_root_signature(application* app) {
 	);
 
 	// Here we set up what kind of texture filter we want.
-	// At some point I'd like to go back and 
+	// At some point I'd like to go back and learn what exactly
+	// all these parameters are doing.
 	sampler = {};
 	sampler.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
 	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
