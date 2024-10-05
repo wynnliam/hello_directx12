@@ -6,6 +6,5 @@ that these are not listed in any particular order.
 * Vertex Index Buffer
 * Textured cube
 * Load textures from file
-* Correct shader/application input data
 * Better synchronization mechanism
 * Replace upload heap used in vertex buffer creation

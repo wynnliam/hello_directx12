@@ -23,6 +23,11 @@ const UINT TEXTURE_PIXEL_SIZE = 4;
 // input to our vertex shader here is a FLOAT3 and a FLOAT2. However,
 // in the shader, it takes two float4's. I need to figure out why
 // this is the case, and how to structure it to match.
+//
+// I am keeping the above comment for posterity's sake. However, my
+// code *DOES NOT* reflect this anymore. But basically I guess it boils
+// down to HLSL can handle the type differences with padding. So if it
+// expects a float4 but gets a float3, no problem we'll fix that up.
 struct vertex {
 	XMFLOAT3 position;
 	XMFLOAT2 uv;

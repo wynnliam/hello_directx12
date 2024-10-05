@@ -24,11 +24,11 @@ Texture2D my_texture : register(t0);
 // space.
 SamplerState my_sampler : register(s0);
 
-vertex_pos_uv vs_main(float4 position : POSITION, float4 uv : TEXCOORD)
+vertex_pos_uv vs_main(float3 position : POSITION, float2 uv : TEXCOORD)
 {
     vertex_pos_uv result;
     
-    result.position = position;
+    result.position = float4(position, 1.0f);
     result.uv = uv;
     
     return result;
