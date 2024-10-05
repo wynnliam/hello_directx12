@@ -344,7 +344,7 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 }
 
 void initialize_vertex_buffer(application* app) {
-	vertex triangle_verts[3];
+	vertex triangle_verts[6];
 	UINT vertex_buffer_size;
 	ComPtr<ID3D12Resource> vertex_buffer;
 	ComPtr<ID3D12Device> dev;
@@ -361,9 +361,12 @@ void initialize_vertex_buffer(application* app) {
 	// Define the input data we will send to the shader.
 	//
 
-	triangle_verts[0] = { {  0.0f,  1.0f, 0.0f }, { 0.5f, 0.0f } };
-	triangle_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f } };
-	triangle_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } };
+	triangle_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
+	triangle_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
+	triangle_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
+	triangle_verts[3] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } };
+	triangle_verts[4] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
+	triangle_verts[5] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } };
 
 	vertex_buffer_size = sizeof(triangle_verts);
 
@@ -781,7 +784,7 @@ void populate_command_list(application* app) {
 	// Draw the triangle.
 	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
-	command_list->DrawInstanced(3, 1, 0, 0);
+	command_list->DrawInstanced(6, 1, 0, 0);
 
 	//
 	// Once our commands are done, close the command list.
