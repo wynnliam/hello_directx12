@@ -39,9 +39,11 @@ struct application {
 
 	float clear_color[4];
 
-	// Resources to render the triangle.
+	// Resources to render the square.
 	ComPtr<ID3D12Resource> vertex_buffer;
 	D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
+	ComPtr<ID3D12Resource> index_buffer;
+	D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 	ComPtr<ID3D12Resource> texture;
 
 	// This describes the various parameters passed to the

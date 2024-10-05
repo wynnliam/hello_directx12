@@ -82,13 +82,13 @@ void load_assets(application* app) {
 	command_list->SetPipelineState(app->pipeline_state.Get());
 
 	//
-	// Initialize the vertex buffer for the textured triangle.
+	// Initialize the vertex buffer for the textured square.
 	//
 
 	initialize_vertex_buffer(app);
 
 	//
-	// Create the texture for our triangle.
+	// Create the texture for our square.
 	//
 
 	create_texture(app);
@@ -344,16 +344,22 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 }
 
 void initialize_vertex_buffer(application* app) {
-	vertex triangle_verts[6];
+	vertex square_verts[4];
+	WORD square_indices[6];
 	UINT vertex_buffer_size;
+	UINT index_buffer_size;
 	ComPtr<ID3D12Resource> vertex_buffer;
+	ComPtr<ID3D12Resource> index_buffer;
 	ComPtr<ID3D12Device> dev;
 	CD3DX12_HEAP_PROPERTIES heap_properties;
-	CD3DX12_RESOURCE_DESC resource_desc;
+	CD3DX12_RESOURCE_DESC vertex_resource_desc;
+	CD3DX12_RESOURCE_DESC index_resource_desc;
 	HRESULT result;
 	UINT8* vertex_data_begin;
+	UINT8* index_data_begin;
 	CD3DX12_RANGE read_range(0, 0);
 	D3D12_VERTEX_BUFFER_VIEW vbv;
+	D3D12_INDEX_BUFFER_VIEW ibv;
 
 	dev = app->dx12->device;
 
@@ -361,17 +367,23 @@ void initialize_vertex_buffer(application* app) {
 	// Define the input data we will send to the shader.
 	//
 
-	triangle_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
-	triangle_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
-	triangle_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
-	triangle_verts[3] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } };
-	triangle_verts[4] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
-	triangle_verts[5] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } };
+	square_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
+	square_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
+	square_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
+	square_verts[3] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
 
-	vertex_buffer_size = sizeof(triangle_verts);
+	square_indices[0] = 0;
+	square_indices[1] = 1;
+	square_indices[2] = 2;
+	square_indices[3] = 0;
+	square_indices[4] = 3;
+	square_indices[5] = 1;
+
+	vertex_buffer_size = sizeof(square_verts);
+	index_buffer_size = sizeof(square_indices);
 
 	heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	resource_desc = CD3DX12_RESOURCE_DESC::Buffer(vertex_buffer_size);
+	vertex_resource_desc = CD3DX12_RESOURCE_DESC::Buffer(vertex_buffer_size);
 
 	// Note: using upload heaps to transfer static data like vert
 	// buffers is not recommended. Every time the GPU needs it, the
@@ -381,7 +393,7 @@ void initialize_vertex_buffer(application* app) {
 	result = dev->CreateCommittedResource(
 		&heap_properties,
 		D3D12_HEAP_FLAG_NONE,
-		&resource_desc,
+		&vertex_resource_desc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		NULL,
 		IID_PPV_ARGS(&vertex_buffer)
@@ -390,12 +402,13 @@ void initialize_vertex_buffer(application* app) {
 	throw_if_failed(result);
 
 	//
-	// Copy the triangle data over to the vertex buffer.
+	// Copy the square vertex data over to the vertex buffer.
 	//
 
+	vertex_data_begin = NULL;
 	result = vertex_buffer->Map(0, &read_range, (void**)(&vertex_data_begin));
 	throw_if_failed(result);
-	memcpy(vertex_data_begin, triangle_verts, sizeof(triangle_verts));
+	memcpy(vertex_data_begin, square_verts, sizeof(square_verts));
 	vertex_buffer->Unmap(0, NULL);
 
 	app->vertex_buffer = vertex_buffer;
@@ -410,6 +423,45 @@ void initialize_vertex_buffer(application* app) {
 	vbv.SizeInBytes = vertex_buffer_size;
 
 	app->vertex_buffer_view = vbv;
+
+	//
+	// Now we will repeat the process for the index buffer.
+	//
+
+	index_resource_desc = CD3DX12_RESOURCE_DESC::Buffer(index_buffer_size);
+	result = dev->CreateCommittedResource(
+		&heap_properties,
+		D3D12_HEAP_FLAG_NONE,
+		&index_resource_desc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		NULL,
+		IID_PPV_ARGS(&index_buffer)
+	);
+
+	throw_if_failed(result);
+
+	//
+	// Copy the square index data over to the vertex buffer.
+	//
+
+	index_data_begin = NULL;
+	result = index_buffer->Map(0, &read_range, (void**)(&index_data_begin));
+	throw_if_failed(result);
+	memcpy(index_data_begin, square_indices, sizeof(square_indices));
+	index_buffer->Unmap(0, NULL);
+
+	app->index_buffer = index_buffer;
+
+	//
+	// Finally, initialize the index buffer view.
+	//
+
+	ibv = {};
+	ibv.BufferLocation = index_buffer->GetGPUVirtualAddress();
+	ibv.SizeInBytes = index_buffer_size;
+	ibv.Format = DXGI_FORMAT_R16_UINT;
+
+	app->index_buffer_view = ibv;
 }
 
 void create_texture(application* app) {
@@ -781,10 +833,11 @@ void populate_command_list(application* app) {
 		NULL
 	);
 
-	// Draw the triangle.
+	// Draw the square.
 	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
-	command_list->DrawInstanced(6, 1, 0, 0);
+	command_list->IASetIndexBuffer(&(app->index_buffer_view));
+	command_list->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 	//
 	// Once our commands are done, close the command list.
