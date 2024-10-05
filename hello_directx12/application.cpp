@@ -153,18 +153,45 @@ ComPtr<ID3D12RootSignature> initialize_root_signature(application* app) {
 	// At some point I'd like to go back and learn what exactly
 	// all these parameters are doing.
 	sampler = {};
+	// The filtering method used when sampling the texture.
 	sampler.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	// What should the sampler do if the u coordinate is outside
+	// [0, 1]?
 	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	// What should the sampler do if the v coordinate is outside
+	// [0, 1]?
 	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	// What should the sampler do if the w coordinate is outside
+	// [0, 1]? 
 	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	// If we're doing mipmapping, this is a bias we add to the calculated
+	// mip-level. Say we calculated mip level 3, but then our bias was 2.
+	// Then our resulting mip level is 5.
 	sampler.MipLODBias = 0;
+	// Something to do with anisotropy. Not sure. TODO: Read up on this
 	sampler.MaxAnisotropy = 0;
+	// Compares sampled data to existing sampled data. For what reason
+	// I am not sure. This is needed for fancy sampling in something like
+	// a shadow mapping, depth testing, or any kind of fancy filtering.
 	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	// If our Address members are D3D12_TEXTURE_ADDRESS_MODE_BORDER, then
+	// this is the border color we'd want for it.
 	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	// These two have to do with mipmap ranges. Im not too sure what
+	// they are used for.
 	sampler.MinLOD = 0.0f;
 	sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	// Corresponds to the shader register in HLSL. In our shader
+	// (texture_shader.hlsl), we specified this was located at register
+	// 0. So if we had multiple samplers, we would put them in the
+	// corresponding shader regsiter.
 	sampler.ShaderRegister = 0;
+	// Similar to above, but we are dealing with reigster spaces. I don't
+	// know how many register spaces there are. By default the value is 0
+	// in HLSL, so that's why we set this to 0 here.
 	sampler.RegisterSpace = 0;
+	// Basically says: who in the pipeline sees this sampler? In our case,
+	// we want the pixel shader to see it.
 	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	// Use the root params + sampler to define the root signature's

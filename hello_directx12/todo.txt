@@ -8,5 +8,4 @@ that these are not listed in any particular order.
 * Load textures from file
 * Correct shader/application input data
 * Better synchronization mechanism
-* Do learning about the sampler type that is used
 * Replace upload heap used in vertex buffer creation
