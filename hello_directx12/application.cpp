@@ -85,7 +85,7 @@ void load_assets(application* app) {
 	// Initialize the vertex buffer for the textured square.
 	//
 
-	initialize_vertex_buffer(app);
+	initialize_square(app);
 
 	//
 	// Create the texture for our square.
@@ -343,7 +343,7 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 	return pipeline_state;
 }
 
-void initialize_vertex_buffer(application* app) {
+void initialize_square(application* app) {
 	vertex square_verts[4];
 	WORD square_indices[6];
 	UINT vertex_buffer_size;

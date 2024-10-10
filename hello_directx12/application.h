@@ -71,7 +71,8 @@ bool initialize_application(
 void load_assets(application* app);
 ComPtr<ID3D12RootSignature> initialize_root_signature(application* app);
 ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app);
-void initialize_vertex_buffer(application* app);
+// Initializes the buffers needed for the square we draw.
+void initialize_square(application* app);
 void upload_buffer_data(
 	ComPtr<ID3D12Device> dev,
 	void* buffer_data,

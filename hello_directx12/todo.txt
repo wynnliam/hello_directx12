@@ -1,8 +1,6 @@
 Basically an on-going list of things I would like to do. Note
 that these are not listed in any particular order.
 
-* Refactor initialize_vertex_buffer
-	* Include rename as well
 * Cube
 	* Eventually make textured.
 * Specify an MVP matrix in shader
