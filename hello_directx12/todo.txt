@@ -3,8 +3,8 @@ that these are not listed in any particular order.
 
 * Cube
 	* Eventually make textured.
-* Specify an MVP matrix in shader
-	* Implies depth testing
+	* Specify an MVP matrix in shader
+		* Implies depth testing
 * Load textures from file
 * Better synchronization mechanism
 * Replace upload heap used in vertex buffer creation
