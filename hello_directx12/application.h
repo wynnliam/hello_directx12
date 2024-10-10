@@ -72,6 +72,12 @@ void load_assets(application* app);
 ComPtr<ID3D12RootSignature> initialize_root_signature(application* app);
 ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app);
 void initialize_vertex_buffer(application* app);
+void upload_buffer_data(
+	ComPtr<ID3D12Device> dev,
+	void* buffer_data,
+	const UINT buffer_size,
+	ID3D12Resource** resource_buffer
+);
 void create_texture(application* app);
 vector<UINT8> generate_texture_data();
 

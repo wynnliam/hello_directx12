@@ -351,13 +351,6 @@ void initialize_vertex_buffer(application* app) {
 	ComPtr<ID3D12Resource> vertex_buffer;
 	ComPtr<ID3D12Resource> index_buffer;
 	ComPtr<ID3D12Device> dev;
-	CD3DX12_HEAP_PROPERTIES heap_properties;
-	CD3DX12_RESOURCE_DESC vertex_resource_desc;
-	CD3DX12_RESOURCE_DESC index_resource_desc;
-	HRESULT result;
-	UINT8* vertex_data_begin;
-	UINT8* index_data_begin;
-	CD3DX12_RANGE read_range(0, 0);
 	D3D12_VERTEX_BUFFER_VIEW vbv;
 	D3D12_INDEX_BUFFER_VIEW ibv;
 
@@ -382,34 +375,12 @@ void initialize_vertex_buffer(application* app) {
 	vertex_buffer_size = sizeof(square_verts);
 	index_buffer_size = sizeof(square_indices);
 
-	heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	vertex_resource_desc = CD3DX12_RESOURCE_DESC::Buffer(vertex_buffer_size);
-
-	// Note: using upload heaps to transfer static data like vert
-	// buffers is not recommended. Every time the GPU needs it, the
-	// upload heap will be marshalled over. Please read up on Default
-	// Heap Usage. An upload heap is used here for code simplicity,
-	// and because there are very few verts to actually transfer.
-	result = dev->CreateCommittedResource(
-		&heap_properties,
-		D3D12_HEAP_FLAG_NONE,
-		&vertex_resource_desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		NULL,
-		IID_PPV_ARGS(&vertex_buffer)
+	upload_buffer_data(
+		dev,
+		square_verts,
+		vertex_buffer_size,
+		&vertex_buffer
 	);
-
-	throw_if_failed(result);
-
-	//
-	// Copy the square vertex data over to the vertex buffer.
-	//
-
-	vertex_data_begin = NULL;
-	result = vertex_buffer->Map(0, &read_range, (void**)(&vertex_data_begin));
-	throw_if_failed(result);
-	memcpy(vertex_data_begin, square_verts, sizeof(square_verts));
-	vertex_buffer->Unmap(0, NULL);
 
 	app->vertex_buffer = vertex_buffer;
 
@@ -428,27 +399,12 @@ void initialize_vertex_buffer(application* app) {
 	// Now we will repeat the process for the index buffer.
 	//
 
-	index_resource_desc = CD3DX12_RESOURCE_DESC::Buffer(index_buffer_size);
-	result = dev->CreateCommittedResource(
-		&heap_properties,
-		D3D12_HEAP_FLAG_NONE,
-		&index_resource_desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		NULL,
-		IID_PPV_ARGS(&index_buffer)
+	upload_buffer_data(
+		dev,
+		square_indices,
+		index_buffer_size,
+		&index_buffer
 	);
-
-	throw_if_failed(result);
-
-	//
-	// Copy the square index data over to the vertex buffer.
-	//
-
-	index_data_begin = NULL;
-	result = index_buffer->Map(0, &read_range, (void**)(&index_data_begin));
-	throw_if_failed(result);
-	memcpy(index_data_begin, square_indices, sizeof(square_indices));
-	index_buffer->Unmap(0, NULL);
 
 	app->index_buffer = index_buffer;
 
@@ -462,6 +418,48 @@ void initialize_vertex_buffer(application* app) {
 	ibv.Format = DXGI_FORMAT_R16_UINT;
 
 	app->index_buffer_view = ibv;
+}
+
+void upload_buffer_data(
+	ComPtr<ID3D12Device> dev,
+	void* buffer_data,
+	const UINT buffer_size,
+	ID3D12Resource** resource_buffer
+) {
+	CD3DX12_HEAP_PROPERTIES heap_properties;
+	CD3DX12_RESOURCE_DESC buffer_resource_desc;
+	HRESULT result;
+	UINT8* buffer_data_begin;
+	CD3DX12_RANGE read_range(0, 0);
+
+	heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	buffer_resource_desc = CD3DX12_RESOURCE_DESC::Buffer(buffer_size);
+
+	// Note: using upload heaps to transfer static data like vert
+	// buffers is not recommended. Every time the GPU needs it, the
+	// upload heap will be marshalled over. Please read up on Default
+	// Heap Usage. An upload heap is used here for code simplicity,
+	// and because there are very few verts to actually transfer.
+	result = dev->CreateCommittedResource(
+		&heap_properties,
+		D3D12_HEAP_FLAG_NONE,
+		&buffer_resource_desc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		NULL,
+		IID_PPV_ARGS(resource_buffer)
+	);
+
+	throw_if_failed(result);
+
+	//
+	// Copy the square vertex data over to the vertex buffer.
+	//
+
+	buffer_data_begin = NULL;
+	result = (*resource_buffer)->Map(0, &read_range, (void**)(&buffer_data_begin));
+	throw_if_failed(result);
+	memcpy(buffer_data_begin, buffer_data, buffer_size);
+	(*resource_buffer)->Unmap(0, NULL);
 }
 
 void create_texture(application* app) {
