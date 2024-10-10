@@ -39,7 +39,7 @@ struct application {
 
 	float clear_color[4];
 
-	// Resources to render the square.
+	// Resources to render the cube.
 	ComPtr<ID3D12Resource> vertex_buffer;
 	D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
 	ComPtr<ID3D12Resource> index_buffer;
@@ -71,8 +71,8 @@ bool initialize_application(
 void load_assets(application* app);
 ComPtr<ID3D12RootSignature> initialize_root_signature(application* app);
 ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app);
-// Initializes the buffers needed for the square we draw.
-void initialize_square(application* app);
+// Initializes the buffers needed for the cube we draw.
+void initialize_cube(application* app);
 void upload_buffer_data(
 	ComPtr<ID3D12Device> dev,
 	void* buffer_data,

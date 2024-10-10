@@ -82,13 +82,13 @@ void load_assets(application* app) {
 	command_list->SetPipelineState(app->pipeline_state.Get());
 
 	//
-	// Initialize the vertex buffer for the textured square.
+	// Initialize the vertex buffer for the textured cube.
 	//
 
-	initialize_square(app);
+	initialize_cube(app);
 
 	//
-	// Create the texture for our square.
+	// Create the texture for our cube.
 	//
 
 	create_texture(app);
@@ -343,9 +343,9 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 	return pipeline_state;
 }
 
-void initialize_square(application* app) {
-	vertex square_verts[4];
-	WORD square_indices[6];
+void initialize_cube(application* app) {
+	vertex cube_verts[4];
+	WORD cube_indices[6];
 	UINT vertex_buffer_size;
 	UINT index_buffer_size;
 	ComPtr<ID3D12Resource> vertex_buffer;
@@ -360,24 +360,24 @@ void initialize_square(application* app) {
 	// Define the input data we will send to the shader.
 	//
 
-	square_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
-	square_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
-	square_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
-	square_verts[3] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
+	cube_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
+	cube_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
+	cube_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
+	cube_verts[3] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
 
-	square_indices[0] = 0;
-	square_indices[1] = 1;
-	square_indices[2] = 2;
-	square_indices[3] = 0;
-	square_indices[4] = 3;
-	square_indices[5] = 1;
+	cube_indices[0] = 0;
+	cube_indices[1] = 1;
+	cube_indices[2] = 2;
+	cube_indices[3] = 0;
+	cube_indices[4] = 3;
+	cube_indices[5] = 1;
 
-	vertex_buffer_size = sizeof(square_verts);
-	index_buffer_size = sizeof(square_indices);
+	vertex_buffer_size = sizeof(cube_verts);
+	index_buffer_size = sizeof(cube_indices);
 
 	upload_buffer_data(
 		dev,
-		square_verts,
+		cube_verts,
 		vertex_buffer_size,
 		&vertex_buffer
 	);
@@ -401,7 +401,7 @@ void initialize_square(application* app) {
 
 	upload_buffer_data(
 		dev,
-		square_indices,
+		cube_indices,
 		index_buffer_size,
 		&index_buffer
 	);
@@ -452,7 +452,7 @@ void upload_buffer_data(
 	throw_if_failed(result);
 
 	//
-	// Copy the square vertex data over to the vertex buffer.
+	// Copy the cube vertex data over to the vertex buffer.
 	//
 
 	buffer_data_begin = NULL;
@@ -831,7 +831,7 @@ void populate_command_list(application* app) {
 		NULL
 	);
 
-	// Draw the square.
+	// Draw the cube.
 	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
 	command_list->IASetIndexBuffer(&(app->index_buffer_view));

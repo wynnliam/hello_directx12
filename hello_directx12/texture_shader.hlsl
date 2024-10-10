@@ -5,7 +5,6 @@
 
     TODO:
     1. Supply an MVP matrix
-    2. Cleanup input to match program
 */
 
 struct vertex_pos_uv
