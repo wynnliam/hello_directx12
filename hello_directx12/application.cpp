@@ -2,6 +2,9 @@
 
 #include "application.h"
 #include "utils.h"
+#include <iostream>
+
+using namespace std;
 
 bool initialize_application(
 	application* app,
@@ -11,6 +14,10 @@ bool initialize_application(
 	const bool use_warp
 ) {
 	bool success;
+
+	app->screen_w = screen_w;
+	app->screen_h = screen_h;
+	app->field_of_view = 45.0f;
 
 	//
 	// First set up the DX12 Handler.
@@ -92,6 +99,12 @@ void load_assets(application* app) {
 	//
 
 	create_texture(app);
+
+	//
+	// Initialize the depth buffer.
+	//
+
+	initialize_depth_buffer(app);
 }
 
 ComPtr<ID3D12RootSignature> initialize_root_signature(application* app) {
@@ -100,7 +113,7 @@ ComPtr<ID3D12RootSignature> initialize_root_signature(application* app) {
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE feature_data;
 	HRESULT result;
 	CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
-	CD3DX12_ROOT_PARAMETER1 root_parameters[1];
+	CD3DX12_ROOT_PARAMETER1 root_parameters[2];
 	D3D12_STATIC_SAMPLER_DESC sampler;
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC root_sig_desc;
 	ComPtr<ID3DBlob> sig_blob;
@@ -147,6 +160,14 @@ ComPtr<ID3D12RootSignature> initialize_root_signature(application* app) {
 		1,
 		&ranges[0],
 		D3D12_SHADER_VISIBILITY_PIXEL
+	);
+
+	root_parameters[1] = {};
+	root_parameters[1].InitAsConstants(
+		sizeof(XMMATRIX) / 4,
+		0,
+		0,
+		D3D12_SHADER_VISIBILITY_VERTEX
 	);
 
 	// Here we set up what kind of texture filter we want.
@@ -235,6 +256,8 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 	ComPtr<ID3D12PipelineState> pipeline_state;
 	ComPtr<ID3DBlob> vertex_blob;
 	ComPtr<ID3DBlob> pixel_blob;
+	ComPtr<ID3DBlob> err_blob;
+	char* error;
 	UINT compile_flags;
 	HRESULT result;
 	D3D12_INPUT_ELEMENT_DESC input_element_desc[2];
@@ -259,12 +282,19 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 		NULL,
 		NULL,
 		"vs_main",
-		"vs_5_0",
+		"vs_5_1",
 		compile_flags,
 		0,
 		&vertex_blob,
-		NULL
+		&err_blob
 	);
+
+	if (FAILED(result)) {
+		if (err_blob) {
+			error = (char*)err_blob->GetBufferPointer();
+			cerr << error << endl;
+		}
+	}
 
 	throw_if_failed(result);
 
@@ -274,12 +304,19 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 		NULL,
 		NULL,
 		"ps_main",
-		"ps_5_0",
+		"ps_5_1",
 		compile_flags,
 		0,
 		&pixel_blob,
 		NULL
 	);
+
+	if (FAILED(result)) {
+		if (err_blob) {
+			error = (char*)err_blob->GetBufferPointer();
+			cerr << error << endl;
+		}
+	}
 
 	throw_if_failed(result);
 
@@ -326,6 +363,7 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 	pso_desc.SampleMask = UINT_MAX;
 	pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pso_desc.NumRenderTargets = 1;
+	pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	pso_desc.SampleDesc.Count = 1;
 
@@ -344,8 +382,8 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 }
 
 void initialize_cube(application* app) {
-	vertex cube_verts[4];
-	WORD cube_indices[6];
+	vertex cube_verts[8];
+	WORD cube_indices[36];
 	UINT vertex_buffer_size;
 	UINT index_buffer_size;
 	ComPtr<ID3D12Resource> vertex_buffer;
@@ -358,19 +396,60 @@ void initialize_cube(application* app) {
 
 	//
 	// Define the input data we will send to the shader.
+	// For reference on these vertices, please see Cube-Vertices.png
 	//
 
-	cube_verts[0] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } }; 
-	cube_verts[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } }; 
-	cube_verts[2] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } }; 
-	cube_verts[3] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
+	cube_verts[0] = { { -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }; 
+	cube_verts[1] = { { -1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f } }; 
+	cube_verts[2] = { {  1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f } }; 
+	cube_verts[3] = { {  1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } };
+	cube_verts[4] = { { -1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
+	cube_verts[5] = { { -1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f } };
+	cube_verts[6] = { {  1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f } };
+	cube_verts[7] = { {  1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
 
-	cube_indices[0] = 0;
-	cube_indices[1] = 1;
-	cube_indices[2] = 2;
-	cube_indices[3] = 0;
-	cube_indices[4] = 3;
-	cube_indices[5] = 1;
+	// Front-face
+	cube_indices[ 0] = 0;
+	cube_indices[ 1] = 1;
+	cube_indices[ 2] = 2;
+	cube_indices[ 3] = 0;
+	cube_indices[ 4] = 2;
+	cube_indices[ 5] = 3;
+	// Back-face
+	cube_indices[ 6] = 4;
+	cube_indices[ 7] = 6;
+	cube_indices[ 8] = 5;
+	cube_indices[ 9] = 4;
+	cube_indices[10] = 7;
+	cube_indices[11] = 6;
+	// Left-face
+	cube_indices[12] = 4;
+	cube_indices[13] = 5;
+	cube_indices[14] = 1;
+	cube_indices[15] = 4;
+	cube_indices[16] = 1;
+	cube_indices[17] = 0;
+	// Right-face
+	cube_indices[18] = 3;
+	cube_indices[19] = 2;
+	cube_indices[20] = 6;
+	cube_indices[21] = 3;
+	cube_indices[22] = 6;
+	cube_indices[23] = 7;
+	// Top-face
+	cube_indices[24] = 1;
+	cube_indices[25] = 5;
+	cube_indices[26] = 6;
+	cube_indices[27] = 1;
+	cube_indices[28] = 6;
+	cube_indices[29] = 2;
+	// Bottom-face
+	cube_indices[30] = 4;
+	cube_indices[31] = 0;
+	cube_indices[32] = 3;
+	cube_indices[33] = 4;
+	cube_indices[34] = 3;
+	cube_indices[35] = 7;
 
 	vertex_buffer_size = sizeof(cube_verts);
 	index_buffer_size = sizeof(cube_indices);
@@ -666,13 +745,123 @@ vector<UINT8> generate_texture_data() {
 	return result;
 }
 
+void initialize_depth_buffer(application* app) {
+	dx12_handler* dx12;
+	ComPtr<ID3D12Device> device;
+	D3D12_CLEAR_VALUE optimized_clear_val;
+	CD3DX12_HEAP_PROPERTIES heap_properties;
+	CD3DX12_RESOURCE_DESC tex_desc;
+	D3D12_DESCRIPTOR_HEAP_DESC dsv_heap_desc;
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc;
+	HRESULT result;
+
+	dx12 = app->dx12;
+	device = dx12->device;
+
+	//
+	// First we should wait until the command queue
+	// is finished doing anything.
+	//
+
+	wait_for_previous_frame(dx12);
+
+	//
+	// Next we set up all the properties for our depth buffer.
+	//
+
+	optimized_clear_val = {};
+	optimized_clear_val.Format = DXGI_FORMAT_D32_FLOAT;
+	optimized_clear_val.DepthStencil = { 1.0f, 0 };
+
+	heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	tex_desc = CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_D32_FLOAT,
+		app->screen_w,
+		app->screen_h,
+		1,
+		0,
+		1,
+		0,
+		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
+	);
+
+	//
+	// Finally we create our depth-buffer and depth stencil views.
+	//
+
+	result = device->CreateCommittedResource(
+		&heap_properties,
+		D3D12_HEAP_FLAG_NONE,
+		&tex_desc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&optimized_clear_val,
+		IID_PPV_ARGS(&(app->depth_buffer))
+	);
+
+	throw_if_failed(result);
+
+	// TODO: Should move this out so we create it once. The rest
+	// of our code can be used to resize depth buffer when our
+	// window is created. For now I am being lazy.
+	dsv_heap_desc = {};
+	dsv_heap_desc.NumDescriptors = 1;
+	dsv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	result = device->CreateDescriptorHeap(
+		&dsv_heap_desc,
+		IID_PPV_ARGS(&(app->depth_stencil_view))
+	);
+
+	dsv_desc = {};
+	dsv_desc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsv_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsv_desc.Texture2D.MipSlice = 0;
+	dsv_desc.Flags = D3D12_DSV_FLAG_NONE;
+
+	device->CreateDepthStencilView(
+		app->depth_buffer.Get(),
+		&dsv_desc,
+		app->depth_stencil_view->GetCPUDescriptorHandleForHeapStart()
+	);
+}
+
 void frame(application* app) {
 	update(app);
 	render(app);
 }
 
 void update(application* app) {
+	XMVECTOR eye_position;
+	XMVECTOR focus_point;
+	XMVECTOR up_dir;
+	float aspect_ratio;
 
+	//
+	// Set the model matrix.
+	//
+
+	app->model_matrix = XMMatrixIdentity();
+
+	//
+	// Set the view matrix.
+	//
+
+	eye_position = XMVectorSet(0, 0, -10, 1);
+	focus_point = XMVectorSet(0, 0, 0, 1);
+	up_dir = XMVectorSet(0, 1, 0, 0);
+	app->view_matrix = XMMatrixLookAtLH(
+		eye_position,
+		focus_point,
+		up_dir
+	);
+
+	aspect_ratio = (float)app->screen_w / (float)app->screen_h;
+	app->projection_matrix = XMMatrixPerspectiveFovLH(
+		XMConvertToRadians(app->field_of_view),
+		aspect_ratio,
+		0.1f,
+		100.0f
+	);
 }
 
 void render(application* app) {
@@ -732,6 +921,8 @@ void populate_command_list(application* app) {
 	CD3DX12_RESOURCE_BARRIER barrier_render_target;
 	CD3DX12_RESOURCE_BARRIER barrier_present;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_handle;
+	D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle;
+	XMMATRIX mvp_matrix;
 
 	dx12 = app->dx12;
 	command_allocator = dx12->command_allocator;
@@ -808,7 +999,7 @@ void populate_command_list(application* app) {
 	command_list->ResourceBarrier(1, &barrier_render_target);
 
 	//
-	// Get the RTV for the current back buffer.
+	// Get the RTV and DSV for the current back buffer.
 	//
 
 	rtv_handle.InitOffsetted(
@@ -817,7 +1008,31 @@ void populate_command_list(application* app) {
 		rtv_descriptor_size
 	);
 
-	command_list->OMSetRenderTargets(1, &rtv_handle, FALSE, NULL);
+	dsv_handle = app->depth_stencil_view->GetCPUDescriptorHandleForHeapStart();
+
+	command_list->OMSetRenderTargets(1, &rtv_handle, FALSE, &dsv_handle);
+
+	//
+	// Now update our root parameters. In this case, it is just the
+	// MVP matrix.
+	//
+
+	mvp_matrix = XMMatrixMultiply(
+		app->model_matrix,
+		app->view_matrix
+	);
+
+	mvp_matrix = XMMatrixMultiply(
+		mvp_matrix,
+		app->projection_matrix
+	);
+
+	command_list->SetGraphicsRoot32BitConstants(
+		1,
+		sizeof(XMMATRIX) / 4,
+		&mvp_matrix,
+		0
+	);
 
 	//
 	// Now actually record the commands.
@@ -831,11 +1046,21 @@ void populate_command_list(application* app) {
 		NULL
 	);
 
+	// Next clear the depth stencil
+	command_list->ClearDepthStencilView(
+		dsv_handle,
+		D3D12_CLEAR_FLAG_DEPTH,
+		1.0f,
+		0,
+		0,
+		NULL
+	);
+
 	// Draw the cube.
 	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
 	command_list->IASetIndexBuffer(&(app->index_buffer_view));
-	command_list->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	command_list->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
 	//
 	// Once our commands are done, close the command list.

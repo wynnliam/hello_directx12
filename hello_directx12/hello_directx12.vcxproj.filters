@@ -64,4 +64,9 @@
       <Filter>Assets</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="Cube-Vertices.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

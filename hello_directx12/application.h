@@ -34,6 +34,9 @@ struct vertex {
 };
 
 struct application {
+	uint32_t screen_w;
+	uint32_t screen_h;
+
 	// Contains all DX12 objects.
 	dx12_handler* dx12;
 
@@ -45,6 +48,12 @@ struct application {
 	ComPtr<ID3D12Resource> index_buffer;
 	D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 	ComPtr<ID3D12Resource> texture;
+
+	// Camera resources
+	XMMATRIX model_matrix;
+	XMMATRIX view_matrix;
+	XMMATRIX projection_matrix;
+	float field_of_view;
 
 	// This describes the various parameters passed to the
 	// different stages of the shader pipeline.
@@ -58,6 +67,10 @@ struct application {
 	// Needed for rasterizer state
 	CD3DX12_VIEWPORT viewport;
 	CD3DX12_RECT scissor_rect;
+
+	// Needed for the depth buffer.
+	ComPtr<ID3D12Resource> depth_buffer;
+	ComPtr<ID3D12DescriptorHeap> depth_stencil_view;
 };
 
 bool initialize_application(
@@ -81,6 +94,7 @@ void upload_buffer_data(
 );
 void create_texture(application* app);
 vector<UINT8> generate_texture_data();
+void initialize_depth_buffer(application* app);
 
 void frame(application* app);
 
