@@ -1,7 +1,6 @@
 Basically an on-going list of things I would like to do. Note
 that these are not listed in any particular order.
 
-* Fix texture coordinates on cube
 * Load textures from file
 * Better synchronization mechanism
 * Replace upload heap used in vertex buffer creation
