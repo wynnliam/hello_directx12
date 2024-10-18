@@ -3,6 +3,7 @@
 #include "application.h"
 #include "utils.h"
 #include <iostream>
+#include <chrono>
 
 using namespace std;
 
@@ -18,6 +19,8 @@ bool initialize_application(
 	app->screen_w = screen_w;
 	app->screen_h = screen_h;
 	app->field_of_view = 45.0f;
+
+	app->angle = 0.0f;
 
 	//
 	// First set up the DX12 Handler.
@@ -358,8 +361,7 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 	pso_desc.PS = CD3DX12_SHADER_BYTECODE(pixel_blob.Get());
 	pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	pso_desc.DepthStencilState.DepthEnable = FALSE;
-	pso_desc.DepthStencilState.StencilEnable = FALSE;
+	pso_desc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	pso_desc.SampleMask = UINT_MAX;
 	pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pso_desc.NumRenderTargets = 1;
@@ -382,7 +384,7 @@ ComPtr<ID3D12PipelineState> initialize_pipeline_state(application* app) {
 }
 
 void initialize_cube(application* app) {
-	vertex cube_verts[8];
+	vertex cube_verts[24];
 	WORD cube_indices[36];
 	UINT vertex_buffer_size;
 	UINT index_buffer_size;
@@ -396,17 +398,47 @@ void initialize_cube(application* app) {
 
 	//
 	// Define the input data we will send to the shader.
-	// For reference on these vertices, please see Cube-Vertices.png
+	// For reference on these vertices, please see Cube-Vertices.png.
+	// 
+	// You'd think there'd be 8 verticies in total. Normally, you'd
+	// be right, if the cube is not textured. But if it is textured,
+	// we need to account for the fact that multiple verticies need
+	// different texture coordinates.
+	// 
+	// To solve this, we define 4 vertices per face. Since there are
+	// 6 faces, we will need 24 vertices for the cube.
 	//
 
-	cube_verts[0] = { { -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }; 
-	cube_verts[1] = { { -1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f } }; 
-	cube_verts[2] = { {  1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f } }; 
-	cube_verts[3] = { {  1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } };
-	cube_verts[4] = { { -1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
-	cube_verts[5] = { { -1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f } };
-	cube_verts[6] = { {  1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f } };
-	cube_verts[7] = { {  1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
+	// Front-face
+	cube_verts[ 0] = { { -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }; 
+	cube_verts[ 1] = { { -1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f } }; 
+	cube_verts[ 2] = { {  1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f } }; 
+	cube_verts[ 3] = { {  1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } };
+	// Back-face
+	cube_verts[ 4] = { { -1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
+	cube_verts[ 5] = { { -1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f } };
+	cube_verts[ 6] = { {  1.0f,  1.0f,  1.0f }, { 0.0f, 0.0f } };
+	cube_verts[ 7] = { {  1.0f, -1.0f,  1.0f }, { 0.0f, 1.0f } };
+	// Left-face
+	cube_verts[ 8] = { { -1.0f, -1.0f,  1.0f }, { 0.0f, 1.0f } };
+	cube_verts[ 9] = { { -1.0f,  1.0f,  1.0f }, { 0.0f, 0.0f } };
+	cube_verts[10] = { { -1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f } };
+	cube_verts[11] = { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } };
+	// Right-face
+	cube_verts[12] = { {  1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } };
+	cube_verts[13] = { {  1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f } };
+	cube_verts[14] = { {  1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f } };
+	cube_verts[15] = { {  1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
+	// Top-face
+	cube_verts[16] = { { -1.0f,  1.0f, -1.0f }, { 0.0f, 1.0f } };
+	cube_verts[17] = { { -1.0f,  1.0f,  1.0f }, { 0.0f, 0.0f } };
+	cube_verts[18] = { {  1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f } };
+	cube_verts[19] = { {  1.0f,  1.0f, -1.0f }, { 1.0f, 1.0f } };
+	// Bottom-face
+	cube_verts[20] = { { -1.0f, -1.0f,  1.0f }, { 0.0f, 1.0f } };
+	cube_verts[21] = { { -1.0f, -1.0f, -1.0f }, { 0.0f, 0.0f } };
+	cube_verts[22] = { {  1.0f, -1.0f, -1.0f }, { 1.0f, 0.0f } };
+	cube_verts[23] = { {  1.0f, -1.0f,  1.0f }, { 1.0f, 1.0f } };
 
 	// Front-face
 	cube_indices[ 0] = 0;
@@ -423,33 +455,33 @@ void initialize_cube(application* app) {
 	cube_indices[10] = 7;
 	cube_indices[11] = 6;
 	// Left-face
-	cube_indices[12] = 4;
-	cube_indices[13] = 5;
-	cube_indices[14] = 1;
-	cube_indices[15] = 4;
-	cube_indices[16] = 1;
-	cube_indices[17] = 0;
+	cube_indices[12] = 8;
+	cube_indices[13] = 9;
+	cube_indices[14] = 10;
+	cube_indices[15] = 8;
+	cube_indices[16] = 10;
+	cube_indices[17] = 11;
 	// Right-face
-	cube_indices[18] = 3;
-	cube_indices[19] = 2;
-	cube_indices[20] = 6;
-	cube_indices[21] = 3;
-	cube_indices[22] = 6;
-	cube_indices[23] = 7;
+	cube_indices[18] = 12;
+	cube_indices[19] = 13;
+	cube_indices[20] = 14;
+	cube_indices[21] = 12;
+	cube_indices[22] = 14;
+	cube_indices[23] = 15;
 	// Top-face
-	cube_indices[24] = 1;
-	cube_indices[25] = 5;
-	cube_indices[26] = 6;
-	cube_indices[27] = 1;
-	cube_indices[28] = 6;
-	cube_indices[29] = 2;
+	cube_indices[24] = 16;
+	cube_indices[25] = 17;
+	cube_indices[26] = 18;
+	cube_indices[27] = 16;
+	cube_indices[28] = 18;
+	cube_indices[29] = 19;
 	// Bottom-face
-	cube_indices[30] = 4;
-	cube_indices[31] = 0;
-	cube_indices[32] = 3;
-	cube_indices[33] = 4;
-	cube_indices[34] = 3;
-	cube_indices[35] = 7;
+	cube_indices[30] = 20;
+	cube_indices[31] = 21;
+	cube_indices[32] = 22;
+	cube_indices[33] = 20;
+	cube_indices[34] = 22;
+	cube_indices[35] = 23;
 
 	vertex_buffer_size = sizeof(cube_verts);
 	index_buffer_size = sizeof(cube_indices);
@@ -831,6 +863,7 @@ void frame(application* app) {
 }
 
 void update(application* app) {
+	XMVECTOR rotation_axis;
 	XMVECTOR eye_position;
 	XMVECTOR focus_point;
 	XMVECTOR up_dir;
@@ -841,12 +874,15 @@ void update(application* app) {
 	//
 
 	app->model_matrix = XMMatrixIdentity();
+	//app->angle += 0.01;
+	//rotation_axis = XMVectorSet(0, 1, 1, 0);
+	//app->model_matrix = XMMatrixRotationAxis(rotation_axis, (float)app->angle);
 
 	//
 	// Set the view matrix.
 	//
 
-	eye_position = XMVectorSet(0, 0, -10, 1);
+	eye_position = XMVectorSet(0, -5, -10, 1);
 	focus_point = XMVectorSet(0, 0, 0, 1);
 	up_dir = XMVectorSet(0, 1, 0, 0);
 	app->view_matrix = XMMatrixLookAtLH(
@@ -969,20 +1005,17 @@ void populate_command_list(application* app) {
 		heaps
 	);
 
-	command_list->SetGraphicsRootDescriptorTable(
-		0,
-		srv_heap->GetGPUDescriptorHandleForHeapStart()
+	//
+	// Get the RTV and DSV for the current back buffer.
+	//
+
+	rtv_handle.InitOffsetted(
+		rtv_heap->GetCPUDescriptorHandleForHeapStart(),
+		frame_index,
+		rtv_descriptor_size
 	);
 
-	command_list->RSSetViewports(
-		1,
-		&(app->viewport)
-	);
-
-	command_list->RSSetScissorRects(
-		1,
-		&(app->scissor_rect)
-	);
+	dsv_handle = app->depth_stencil_view->GetCPUDescriptorHandleForHeapStart();
 
 	//
 	// Now we can begin to clear the render target. To do so,
@@ -999,18 +1032,44 @@ void populate_command_list(application* app) {
 	command_list->ResourceBarrier(1, &barrier_render_target);
 
 	//
-	// Get the RTV and DSV for the current back buffer.
+	// Clear the render target.
 	//
 
-	rtv_handle.InitOffsetted(
-		rtv_heap->GetCPUDescriptorHandleForHeapStart(),
-		frame_index,
-		rtv_descriptor_size
+	// Set the clear color.
+	command_list->ClearRenderTargetView(
+		rtv_handle,
+		app->clear_color,
+		0,
+		NULL
 	);
 
-	dsv_handle = app->depth_stencil_view->GetCPUDescriptorHandleForHeapStart();
+	// Next clear the depth stencil
+	command_list->ClearDepthStencilView(
+		dsv_handle,
+		D3D12_CLEAR_FLAG_DEPTH,
+		1.0f,
+		0,
+		0,
+		NULL
+	);
 
+	//
+	// Prepare the rendering pipeline
+	//
+
+	command_list->SetPipelineState(app->pipeline_state.Get());
+	command_list->SetComputeRootSignature(app->root_signature.Get());
+	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
+	command_list->IASetIndexBuffer(&(app->index_buffer_view));
+	command_list->RSSetViewports(1, &(app->viewport));
+	command_list->RSSetScissorRects(1,&(app->scissor_rect));
 	command_list->OMSetRenderTargets(1, &rtv_handle, FALSE, &dsv_handle);
+
+	command_list->SetGraphicsRootDescriptorTable(
+		0,
+		srv_heap->GetGPUDescriptorHandleForHeapStart()
+	);
 
 	//
 	// Now update our root parameters. In this case, it is just the
@@ -1038,28 +1097,8 @@ void populate_command_list(application* app) {
 	// Now actually record the commands.
 	//
 
-	// Set the clear color.
-	command_list->ClearRenderTargetView(
-		rtv_handle,
-		app->clear_color,
-		0,
-		NULL
-	);
-
-	// Next clear the depth stencil
-	command_list->ClearDepthStencilView(
-		dsv_handle,
-		D3D12_CLEAR_FLAG_DEPTH,
-		1.0f,
-		0,
-		0,
-		NULL
-	);
 
 	// Draw the cube.
-	command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	command_list->IASetVertexBuffers(0, 1, &(app->vertex_buffer_view));
-	command_list->IASetIndexBuffer(&(app->index_buffer_view));
 	command_list->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
 	//

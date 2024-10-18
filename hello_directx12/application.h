@@ -49,6 +49,9 @@ struct application {
 	D3D12_INDEX_BUFFER_VIEW index_buffer_view;
 	ComPtr<ID3D12Resource> texture;
 
+	// Game-logic resources.
+	double angle;
+
 	// Camera resources
 	XMMATRIX model_matrix;
 	XMMATRIX view_matrix;
