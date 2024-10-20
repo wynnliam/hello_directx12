@@ -97,6 +97,7 @@ void upload_buffer_data(
 );
 void create_texture(application* app);
 vector<UINT8> generate_texture_data();
+vector<UINT8> load_texture_from_file(const std::wstring& file_path);
 void initialize_depth_buffer(application* app);
 
 void frame(application* app);

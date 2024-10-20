@@ -2,10 +2,13 @@
 
 #include "application.h"
 #include "utils.h"
+#include <DirectXTex.h>
 #include <iostream>
 #include <chrono>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 bool initialize_application(
 	application* app,
@@ -602,7 +605,7 @@ void create_texture(application* app) {
 
 	texture_desc = {};
 	texture_desc.MipLevels = 1;
-	texture_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	texture_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	texture_desc.Width = TEXTURE_W;
 	texture_desc.Height = TEXTURE_H;
 	texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -651,10 +654,16 @@ void create_texture(application* app) {
 	throw_if_failed(result);
 
 	//
+	// Load texture from file
+	//
+
+	texture_data = load_texture_from_file(L"./assets/friendo.png");
+
+	//
 	// Procedurally generate a texture.
 	//
 
-	texture_data = generate_texture_data();
+	//texture_data = generate_texture_data();
 
 	//
 	// Upload the actual texture data using the upload heap.
@@ -725,6 +734,41 @@ void create_texture(application* app) {
 	wait_for_previous_frame(app->dx12);
 
 	app->texture = texture;
+}
+
+vector<UINT8> load_texture_from_file(const wstring& file_path) {
+	vector<UINT8> texture_data;
+	fs::path path(file_path);
+	HRESULT result;
+	TexMetadata metadata;
+	ScratchImage scratch_image;
+	UINT texture_size;
+	UINT8* data;
+
+	if (!fs:: exists(path)) {
+		result = E_FAIL;
+		throw_if_failed(result);
+	}
+
+	result = LoadFromWICFile(
+		file_path.c_str(),
+		WIC_FLAGS_FORCE_RGB,
+		&metadata,
+		scratch_image
+	);
+
+	throw_if_failed(result);
+
+	const Image* images = scratch_image.GetImages();
+	texture_size = images[0].rowPitch * images[0].height;
+	texture_data.resize(texture_size);
+	data = texture_data.data();
+
+	for (int i = 0; i < texture_size; i++) {
+		data[i] = images[0].pixels[i];
+	}
+
+	return texture_data;
 }
 
 vector<UINT8> generate_texture_data() {

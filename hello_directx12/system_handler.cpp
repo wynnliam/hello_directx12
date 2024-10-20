@@ -1,6 +1,7 @@
 // Liam Wynn, 9/26/2024, Hello DirectX 12
 
 #include "system_handler.h"
+#include "utils.h"
 
 // Needed for WndProc
 static system_handler* application_system = NULL;
@@ -12,6 +13,7 @@ bool initialize_system(
 	const bool use_warp
 ) {
 	bool success;
+	HRESULT result;
 
 	//
 	// Sets the default application name and acquires the instance.
@@ -19,6 +21,13 @@ bool initialize_system(
 
 	system->application_name = L"Hello DirectX 12";
 	system->instance = GetModuleHandle(NULL);
+
+	//
+	// Need to call this to initialize DirectX 12 (Specifically DirectXTex)
+	//
+
+	result = CoInitializeEx(NULL, COINITBASE_MULTITHREADED);
+	throw_if_failed(result);
 
 	//
 	// Initialize the render window.
