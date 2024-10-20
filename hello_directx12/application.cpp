@@ -736,6 +736,9 @@ void create_texture(application* app) {
 	app->texture = texture;
 }
 
+// TODO: Texture is coming in too saturated. I think this is due to a lack
+// of gamma correction. Need to read up on this a bit more to understand the
+// problem.
 vector<UINT8> load_texture_from_file(const wstring& file_path) {
 	vector<UINT8> texture_data;
 	fs::path path(file_path);
